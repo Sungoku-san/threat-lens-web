@@ -19,15 +19,18 @@ def validate_csv_dataset(filepath):
         if size > Config.MAX_CONTENT_LENGTH:
             return False, "File exceeds max content length limit."
             
-        # Try loading sample rows to check schema
-        df = pd.read_csv(filepath, nrows=5)
+        # Try loading sample rows to check schema with automatic delimiter detection
+        try:
+            df = pd.read_csv(filepath, nrows=5, sep=None, engine='python')
+        except Exception:
+            df = pd.read_csv(filepath, nrows=5)
         
         # Clean columns of whitespace
         cols = [c.strip() for c in df.columns]
         
         # Basic validations
         if len(cols) < 5:
-            return False, "Dataset contains too few columns to process."
+            return False, f"Dataset contains too few columns ({len(cols)} detected). At least 5 network flow feature columns are required. Please verify delimiter (comma or semicolon) and header row."
             
         return True, "Dataset structure is valid."
     except Exception as e:

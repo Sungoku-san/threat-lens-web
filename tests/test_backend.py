@@ -72,6 +72,14 @@ class TestValidators(unittest.TestCase):
         is_valid, msg = validate_csv_dataset(csv_path)
         self.assertTrue(is_valid)
         
+        # Create a mock valid semicolon CSV
+        csv_path_semi = os.path.join(TEMP_TEST_DIR, "test_valid_semi.csv")
+        with open(csv_path_semi, 'w') as f:
+            f.write("col1;col2;col3;col4;col5\n1;2;3;4;5\n")
+            
+        is_valid, msg = validate_csv_dataset(csv_path_semi)
+        self.assertTrue(is_valid)
+
         # Create a mock invalid CSV
         csv_path_invalid = os.path.join(TEMP_TEST_DIR, "test_invalid.csv")
         with open(csv_path_invalid, 'w') as f:

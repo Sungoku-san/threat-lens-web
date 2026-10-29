@@ -408,6 +408,12 @@ document.addEventListener('DOMContentLoaded', () => {
         // Show file loading state
         fileNameText.innerText = file.name;
         fileSizeText.innerText = "Ingesting file...";
+        fileColumnsText.innerText = "--";
+        fileRowsText.innerText = "--";
+        uploadProgressBar.style.width = '0%';
+        uploadPercent.innerText = '0%';
+        uploadAnalyzeBtn.disabled = true;
+        uploadAnalyzeBtn.classList.add('opacity-50', 'cursor-not-allowed');
         dragDropArea.classList.add('hidden');
         fileStatsContainer.classList.remove('hidden');
 
@@ -448,6 +454,8 @@ document.addEventListener('DOMContentLoaded', () => {
         fileStatsContainer.classList.add('hidden');
         dragDropArea.classList.remove('hidden');
         datasetInput.value = '';
+        fileColumnsText.innerText = "--";
+        fileRowsText.innerText = "--";
         uploadProgressBar.style.width = '0%';
         uploadPercent.innerText = '0%';
         uploadAnalyzeBtn.disabled = true;

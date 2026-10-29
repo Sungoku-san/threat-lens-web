@@ -35,7 +35,10 @@ class DatasetService:
             
         # Extract metadata
         try:
-            df = pd.read_csv(filepath)
+            try:
+                df = pd.read_csv(filepath, sep=None, engine='python')
+            except Exception:
+                df = pd.read_csv(filepath)
             metadata = {
                 "dataset_name": filename,
                 "size": f"{os.path.getsize(filepath) / 1024:.2f} KB",
@@ -56,7 +59,10 @@ class DatasetService:
         Parses uploaded CSV and returns rows as dictionaries ready for model prediction.
         """
         try:
-            df = pd.read_csv(filepath, nrows=limit)
+            try:
+                df = pd.read_csv(filepath, nrows=limit, sep=None, engine='python')
+            except Exception:
+                df = pd.read_csv(filepath, nrows=limit)
             # Remove whitespace from column names
             df.columns = df.columns.str.strip()
             df = df.dropna()
