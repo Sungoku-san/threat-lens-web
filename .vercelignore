@@ -1,0 +1,10 @@
+tests/
+test_with_dataset.py
+test_dataset_1000.csv
+backend/models/train_models.py
+backend/models/train_model.py
+backend/dataset/CICIDS2017.csv
+backend/dataset/test_network_flows_1500.csv
+.git
+.github
+*.md

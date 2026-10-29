@@ -5,15 +5,25 @@ from datetime import datetime
 import pandas as pd
 import numpy as np
 
-from sklearn.metrics import (
-    accuracy_score, precision_score, recall_score, f1_score,
-    confusion_matrix, classification_report, roc_curve, auc,
-    precision_recall_curve, average_precision_score, roc_auc_score
-)
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.linear_model import LogisticRegression
-import xgboost as xgb
+try:
+    from sklearn.metrics import (
+        accuracy_score, precision_score, recall_score, f1_score,
+        confusion_matrix, classification_report, roc_curve, auc,
+        precision_recall_curve, average_precision_score, roc_auc_score
+    )
+    from sklearn.ensemble import RandomForestClassifier
+    from sklearn.tree import DecisionTreeClassifier
+    from sklearn.linear_model import LogisticRegression
+    SKLEARN_AVAILABLE = True
+except ImportError:
+    SKLEARN_AVAILABLE = False
+
+try:
+    import xgboost as xgb
+    XGBOOST_AVAILABLE = True
+except ImportError:
+    XGBOOST_AVAILABLE = False
+    xgb = None
 
 from backend.config import Config
 from backend.models.preprocess import load_preprocessors, clean_columns
@@ -423,13 +433,6 @@ class EvaluationService:
         Trains or evaluates available classifier candidates on the exact same test dataset.
         Demonstrates academic rigor and justifies the chosen production model.
         """
-        candidate_models = {
-            "Random Forest": RandomForestClassifier(n_estimators=100, max_depth=12, random_state=42),
-            "Decision Tree": DecisionTreeClassifier(max_depth=10, random_state=42),
-            "Logistic Regression": LogisticRegression(max_iter=1000, solver='lbfgs', random_state=42),
-            "XGBoost": xgb.XGBClassifier(n_estimators=100, max_depth=6, random_state=42, eval_metric='mlogloss')
-        }
-
         # Check if saved model_results.csv already exists to reuse benchmarked numbers
         csv_path = os.path.join(Config.MODEL_FOLDER, 'model_results.csv')
         if os.path.exists(csv_path):
@@ -438,6 +441,14 @@ class EvaluationService:
                 return results_df.to_dict(orient='records')
             except Exception:
                 pass
+
+        candidate_models = {}
+        if SKLEARN_AVAILABLE:
+            candidate_models["Random Forest"] = RandomForestClassifier(n_estimators=100, max_depth=12, random_state=42)
+            candidate_models["Decision Tree"] = DecisionTreeClassifier(max_depth=10, random_state=42)
+            candidate_models["Logistic Regression"] = LogisticRegression(max_iter=1000, solver='lbfgs', random_state=42)
+        if XGBOOST_AVAILABLE and xgb is not None:
+            candidate_models["XGBoost"] = xgb.XGBClassifier(n_estimators=100, max_depth=6, random_state=42, eval_metric='mlogloss')
 
         # Otherwise evaluate candidates dynamically
         comparison = []
