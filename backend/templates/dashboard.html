@@ -933,6 +933,73 @@
                     </div>
                 </div>
 
+                <!-- Model Detection Accuracy & Performance Summary Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <!-- Card 1: Detection Accuracy -->
+                    <div class="glass-panel p-5 rounded-2xl relative overflow-hidden group hover:border-cyberSecondary/40 transition-all duration-300">
+                        <div class="absolute -right-4 -bottom-4 w-20 h-20 bg-cyberSecondary/10 rounded-full blur-xl pointer-events-none"></div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider font-mono">Detection Accuracy</span>
+                            <div class="p-2 rounded-lg bg-cyberSecondary/10 text-cyberSecondary">
+                                <i data-lucide="crosshair" class="w-4 h-4"></i>
+                            </div>
+                        </div>
+                        <div class="flex items-baseline space-x-2">
+                            <h3 class="text-2xl font-space font-bold text-white text-glow-cyan" id="mon-accuracy">99.40%</h3>
+                            <span class="text-[10px] font-mono text-cyberSuccess font-semibold">Calibrated</span>
+                        </div>
+                        <p class="text-[11px] text-gray-400 mt-1 font-light">Validated statistical test score</p>
+                    </div>
+
+                    <!-- Card 2: Model F1 Score -->
+                    <div class="glass-panel p-5 rounded-2xl relative overflow-hidden group hover:border-cyberAccent/40 transition-all duration-300">
+                        <div class="absolute -right-4 -bottom-4 w-20 h-20 bg-cyberAccent/10 rounded-full blur-xl pointer-events-none"></div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider font-mono">Macro F1-Score</span>
+                            <div class="p-2 rounded-lg bg-cyberAccent/10 text-cyberAccent">
+                                <i data-lucide="shield-check" class="w-4 h-4"></i>
+                            </div>
+                        </div>
+                        <div class="flex items-baseline space-x-2">
+                            <h3 class="text-2xl font-space font-bold text-white" id="mon-f1">99.20%</h3>
+                            <span class="text-[10px] font-mono text-cyberAccent font-semibold">Harmonic Mean</span>
+                        </div>
+                        <p class="text-[11px] text-gray-400 mt-1 font-light">Balanced precision & recall</p>
+                    </div>
+
+                    <!-- Card 3: Total Flows Monitored -->
+                    <div class="glass-panel p-5 rounded-2xl relative overflow-hidden group hover:border-cyberPrimary/40 transition-all duration-300">
+                        <div class="absolute -right-4 -bottom-4 w-20 h-20 bg-cyberPrimary/10 rounded-full blur-xl pointer-events-none"></div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider font-mono">Flows Classified</span>
+                            <div class="p-2 rounded-lg bg-cyberPrimary/10 text-cyberPrimary">
+                                <i data-lucide="activity" class="w-4 h-4"></i>
+                            </div>
+                        </div>
+                        <div class="flex items-baseline space-x-2">
+                            <h3 class="text-2xl font-space font-bold text-white" id="mon-total-flows">--</h3>
+                            <span class="text-[10px] font-mono text-gray-400" id="mon-attack-count">0 threats</span>
+                        </div>
+                        <p class="text-[11px] text-gray-400 mt-1 font-light" id="mon-flow-subtext">Ingress packet streams inspected</p>
+                    </div>
+
+                    <!-- Card 4: Avg Confidence -->
+                    <div class="glass-panel p-5 rounded-2xl relative overflow-hidden group hover:border-cyberSuccess/40 transition-all duration-300">
+                        <div class="absolute -right-4 -bottom-4 w-20 h-20 bg-cyberSuccess/10 rounded-full blur-xl pointer-events-none"></div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider font-mono">Avg Confidence</span>
+                            <div class="p-2 rounded-lg bg-cyberSuccess/10 text-cyberSuccess">
+                                <i data-lucide="gauge" class="w-4 h-4"></i>
+                            </div>
+                        </div>
+                        <div class="flex items-baseline space-x-2">
+                            <h3 class="text-2xl font-space font-bold text-white" id="mon-avg-conf">98.8%</h3>
+                            <span class="text-[10px] font-mono text-cyberSuccess font-semibold">Reliability</span>
+                        </div>
+                        <p class="text-[11px] text-gray-400 mt-1 font-light">Per-flow classification confidence</p>
+                    </div>
+                </div>
+
                 <!-- Detection Table Container -->
                 <div class="glass-panel rounded-2xl overflow-hidden">
                     <div class="px-6 py-4 border-b border-white/5 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
