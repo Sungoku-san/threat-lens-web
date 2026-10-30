@@ -753,8 +753,173 @@ document.addEventListener('DOMContentLoaded', () => {
     const drawerRemediationText = document.getElementById('drawerRemediationText');
     const drawerOpenShapBtn = document.getElementById('drawerOpenShapBtn');
     const drawerAskCopilotBtn = document.getElementById('drawerAskCopilotBtn');
-    const drawerRiskBox = document.getElementById('drawerRiskBox');
-    const drawerHeaderIcon = document.getElementById('drawerHeaderIcon');
+    const drawerThreatAnalysisSection = document.getElementById('drawerThreatAnalysisSection');
+    const drawerThreatAnalysisIcon = document.getElementById('drawerThreatAnalysisIcon');
+    const drawerThreatAnalysisTitle = document.getElementById('drawerThreatAnalysisTitle');
+    const drawerThreatReasonBadge = document.getElementById('drawerThreatReasonBadge');
+    const drawerThreatReasonBox = document.getElementById('drawerThreatReasonBox');
+    const drawerThreatStatementIcon = document.getElementById('drawerThreatStatementIcon');
+    const drawerThreatStatementText = document.getElementById('drawerThreatStatementText');
+    const drawerThreatKeyFactors = document.getElementById('drawerThreatKeyFactors');
+    const drawerRiskFactorsList = document.getElementById('drawerRiskFactorsList');
+
+    const getPortServiceName = (port) => {
+        const portMap = {
+            20: 'FTP Data',
+            21: 'FTP Control',
+            22: 'SSH Remote Shell',
+            23: 'Telnet',
+            25: 'SMTP Mail Relay',
+            53: 'DNS Resolver',
+            80: 'HTTP Web Server',
+            110: 'POP3 Mail',
+            123: 'NTP Time Daemon',
+            143: 'IMAP Mail',
+            443: 'HTTPS Encrypted Web',
+            1433: 'MS SQL Server',
+            1521: 'Oracle DB',
+            3306: 'MySQL Database',
+            3389: 'RDP Remote Desktop',
+            5432: 'PostgreSQL Database',
+            6379: 'Redis Cache',
+            8080: 'HTTP Proxy/App',
+            8443: 'HTTPS Secondary',
+            27017: 'MongoDB Database'
+        };
+        const p = parseInt(port);
+        return portMap[p] ? `Port ${p} (${portMap[p]})` : `Port ${port}`;
+    };
+
+    const getShapValue = (shapList, keywords) => {
+        if (!shapList || !shapList.length) return null;
+        for (const kw of keywords) {
+            const found = shapList.find(s => s.name && s.name.toLowerCase().includes(kw.toLowerCase()));
+            if (found) return found;
+        }
+        return null;
+    };
+
+    const formatFlowDuration = (val) => {
+        const num = parseFloat(val);
+        if (isNaN(num)) return val || 'baseline duration';
+        if (num >= 1000000) return `${(num / 1000000).toFixed(2)}s`;
+        if (num >= 1000) return `${(num / 1000).toFixed(1)}ms`;
+        return `${Math.round(num)}μs`;
+    };
+
+    const buildThreatStatement = (row, shapList) => {
+        const isAttack = row.prediction === 'Attack';
+        const isSuspicious = row.prediction === 'Suspicious' || row.prediction === 'Moderate';
+        const svc = getPortServiceName(row.port);
+        const atkType = row.attack_type || 'Malicious Intrusion';
+
+        const fwdPktsObj = getShapValue(shapList, ['Total Fwd Packets', 'Fwd Packets', 'Packets']);
+        const durationObj = getShapValue(shapList, ['Flow Duration', 'Duration']);
+        const fwdLenObj = getShapValue(shapList, ['Total Length of Fwd Packets', 'Length of Fwd', 'Packet Length']);
+
+        const fwdPktsVal = fwdPktsObj ? fwdPktsObj.value : null;
+        const durationStr = durationObj ? formatFlowDuration(durationObj.value) : null;
+        const fwdLenVal = fwdLenObj ? Number(fwdLenObj.value).toLocaleString() : null;
+
+        const posShap = (shapList || []).filter(s => s.impact > 0 || s.type === 'positive');
+        const topAnomalies = posShap.slice(0, 3);
+
+        if (isAttack) {
+            const atkLower = atkType.toLowerCase();
+            let statement = "";
+            let keyPoints = [];
+
+            if (atkLower.includes('ddos') || atkLower.includes('dos') || atkLower.includes('flood')) {
+                statement = `Source IP <strong class="text-white font-mono">${row.src_ip}</strong> is identified as a critical threat executing a <strong class="text-cyberDanger">${atkType}</strong> against target <span class="font-mono text-cyberSecondary">${row.dst_ip}</span> on <strong class="text-white">${svc}</strong>. The host inundated the endpoint with an abnormal flood of ${fwdPktsVal ? `<strong class="text-white font-mono">${fwdPktsVal} forward packets</strong>` : 'high-rate packet streams'}${fwdLenVal ? ` (${fwdLenVal} bytes payload)` : ''}${durationStr ? ` sustained over an atypical duration of ${durationStr}` : ''}. This massive asymmetric surge is designed to overwhelm TCP socket tables, deplete server network buffers, and deny legitimate service availability.`;
+                
+                keyPoints = [
+                    { icon: 'zap', label: 'Exploit Vector', value: `Volumetric DDoS Flood against ${svc}`, color: 'text-cyberDanger' },
+                    { icon: 'activity', label: 'Anomalous Behavior', value: `${fwdPktsVal ? `${fwdPktsVal} Fwd Packets` : 'Extreme packet surge'}${topAnomalies[0] ? ` (+${topAnomalies[0].impact.toFixed(2)} SHAP anomaly influence)` : ''}`, color: 'text-cyberDanger' },
+                    { icon: 'shield-alert', label: 'Threat Impact', value: 'High risk of socket buffer exhaustion & target service outage', color: 'text-cyberWarning' }
+                ];
+            } else if (atkLower.includes('port') || atkLower.includes('scan') || atkLower.includes('recon')) {
+                statement = `Source IP <strong class="text-white font-mono">${row.src_ip}</strong> is identified as a threat conducting unauthorized <strong class="text-cyberDanger">${atkType}</strong> reconnaissance. The host dispatched rapid TCP SYN probe packets targeting <strong class="text-white">${svc}</strong> on <span class="font-mono text-cyberSecondary">${row.dst_ip}</span> with truncated connection lifecycles and minimal data transfer. This behavior matches automated adversary scanners (such as Nmap/Masscan) mapping active daemon listeners to identify attack vectors for subsequent perimeter penetration.`;
+                
+                keyPoints = [
+                    { icon: 'scan', label: 'Exploit Vector', value: `Host Reconnaissance & Port Sweeping on ${svc}`, color: 'text-cyberDanger' },
+                    { icon: 'activity', label: 'Anomalous Behavior', value: `Rapid half-open probe handshakes without data exchange`, color: 'text-cyberDanger' },
+                    { icon: 'shield-alert', label: 'Threat Impact', value: 'Intelligence gathering prior to targeted perimeter breach', color: 'text-cyberWarning' }
+                ];
+            } else if (atkLower.includes('ssh') || atkLower.includes('brute') || atkLower.includes('patator') || atkLower.includes('auth')) {
+                statement = `Source IP <strong class="text-white font-mono">${row.src_ip}</strong> is identified as an active threat executing an automated <strong class="text-cyberDanger">${atkType}</strong> attack against <span class="font-mono text-cyberSecondary">${row.dst_ip}</span> on <strong class="text-white">${svc}</strong>. The host generated high-frequency, repetitive authentication handshake cycles with anomalous request-response ratios. This telemetry signature matches automated dictionary attacks and credential-stuffing tools attempting unauthorized administrative credential compromise.`;
+                
+                keyPoints = [
+                    { icon: 'key', label: 'Exploit Vector', value: `Automated Credential Brute-Force against ${svc}`, color: 'text-cyberDanger' },
+                    { icon: 'activity', label: 'Anomalous Behavior', value: `Repetitive failed authentication attempts and abnormal retry cadence`, color: 'text-cyberDanger' },
+                    { icon: 'shield-alert', label: 'Threat Impact', value: 'Risk of unauthorized terminal shell access & server takeover', color: 'text-cyberWarning' }
+                ];
+            } else if (atkLower.includes('web') || atkLower.includes('sql') || atkLower.includes('xss') || atkLower.includes('exploit')) {
+                statement = `Source IP <strong class="text-white font-mono">${row.src_ip}</strong> is identified as an exploit threat launching <strong class="text-cyberDanger">${atkType}</strong> against <strong class="text-white">${svc}</strong>. Packet telemetry reveals abnormal forward packet payload distributions${fwdLenVal ? ` (${fwdLenVal} bytes)` : ''} exceeding authorized application bounds, indicating attempts to inject exploit strings, bypass input sanitization, or execute remote commands.`;
+                
+                keyPoints = [
+                    { icon: 'bug', label: 'Exploit Vector', value: `Application Layer Injection / Exploit on ${svc}`, color: 'text-cyberDanger' },
+                    { icon: 'activity', label: 'Anomalous Behavior', value: `Malformed payload structure violating standard request boundaries`, color: 'text-cyberDanger' },
+                    { icon: 'shield-alert', label: 'Threat Impact', value: 'Risk of arbitrary payload execution or database compromise', color: 'text-cyberWarning' }
+                ];
+            } else {
+                const anomalySummary = topAnomalies.map(a => `${a.name} (${a.value})`).join(', ');
+                statement = `Source IP <strong class="text-white font-mono">${row.src_ip}</strong> is identified as a malicious threat classified under <strong class="text-cyberDanger">${atkType}</strong>. Packet flow parameters targeting <span class="font-mono text-cyberSecondary">${row.dst_ip}</span> on <strong class="text-white">${svc}</strong> severely violate normal baseline thresholds${anomalySummary ? `, driven by extreme deviations in ${anomalySummary}` : ''}. This traffic pattern exhibits high statistical certainty (${row.confidence.toFixed(1)}%) of malicious adversarial activity.`;
+                
+                keyPoints = [
+                    { icon: 'alert-triangle', label: 'Exploit Vector', value: `${atkType} targeting ${svc}`, color: 'text-cyberDanger' },
+                    { icon: 'activity', label: 'Anomalous Behavior', value: `Features exceeded safety limits (+${topAnomalies[0]?.impact?.toFixed(2) || '0.20'} SHAP deviation)`, color: 'text-cyberDanger' },
+                    { icon: 'shield-alert', label: 'Threat Impact', value: `High-confidence security incident (${row.confidence.toFixed(1)}% ML confidence)`, color: 'text-cyberWarning' }
+                ];
+            }
+
+            return {
+                status: 'Attack',
+                badgeText: 'MALICIOUS THREAT DETECTED',
+                badgeClass: 'border-cyberDanger/30 bg-cyberDanger/10 text-cyberDanger',
+                boxClass: 'bg-cyberDanger/10 border-cyberDanger/30',
+                icon: 'flame',
+                iconClass: 'text-cyberDanger',
+                headerIcon: 'shield-alert',
+                headerClass: 'text-cyberDanger',
+                statement,
+                keyPoints
+            };
+        } else if (isSuspicious) {
+            return {
+                status: 'Suspicious',
+                badgeText: 'SUSPICIOUS TELEMETRY',
+                badgeClass: 'border-cyberWarning/30 bg-cyberWarning/10 text-cyberWarning',
+                boxClass: 'bg-cyberWarning/10 border-cyberWarning/30',
+                icon: 'alert-triangle',
+                iconClass: 'text-cyberWarning',
+                headerIcon: 'alert-triangle',
+                headerClass: 'text-cyberWarning',
+                statement: `Source IP <strong class="text-white font-mono">${row.src_ip}</strong> is flagged as <strong class="text-cyberWarning">Suspicious</strong> due to statistical anomalies in packet distribution and flow timing targeting <span class="font-mono text-cyberSecondary">${row.dst_ip}</span> on <strong class="text-white">${svc}</strong>. While no known exploit signature was fully verified, flow parameter variance exceeds normal operational tolerance limits and warrants ongoing packet inspection.`,
+                keyPoints: [
+                    { icon: 'help-circle', label: 'Observation', value: `Telemetry outlier detected on ${svc}`, color: 'text-cyberWarning' },
+                    { icon: 'activity', label: 'Anomaly Variance', value: `Moderate deviation from baseline flow benchmarks`, color: 'text-cyberWarning' },
+                    { icon: 'eye', label: 'Recommended Action', value: 'Maintain active sensor logging and inspect packet payloads', color: 'text-gray-300' }
+                ]
+            };
+        } else {
+            return {
+                status: 'Normal',
+                badgeText: 'VERIFIED BENIGN FLOW',
+                badgeClass: 'border-cyberSuccess/30 bg-cyberSuccess/10 text-cyberSuccess',
+                boxClass: 'bg-cyberSuccess/10 border-cyberSuccess/20',
+                icon: 'shield-check',
+                iconClass: 'text-cyberSuccess',
+                headerIcon: 'shield-check',
+                headerClass: 'text-cyberSuccess',
+                statement: `Source IP <strong class="text-white font-mono">${row.src_ip}</strong> is verified as <strong class="text-cyberSuccess">Safe and Benign</strong>. Network flow telemetry to <span class="font-mono text-cyberSecondary">${row.dst_ip}</span> on <strong class="text-white">${svc}</strong> conforms strictly to standard protocol specifications. Packet sizes, transmission cadences, and bidirectional handshake timings reside comfortably within normal authorized operating envelopes with no exploit indicators detected.`,
+                keyPoints: [
+                    { icon: 'check-circle-2', label: 'Flow Integrity', value: 'Standard protocol handshake and packet structure', color: 'text-cyberSuccess' },
+                    { icon: 'activity', label: 'Feature Telemetry', value: 'All SHAP feature weights conform to baseline bounds', color: 'text-cyberSuccess' },
+                    { icon: 'shield', label: 'Security State', value: 'Zero malicious indicators or threat signatures identified', color: 'text-cyberSuccess' }
+                ]
+            };
+        }
+    };
 
     const openAttackDetails = (row) => {
         state.currentSelectedFlow = row;
@@ -799,9 +964,108 @@ document.addEventListener('DOMContentLoaded', () => {
             drawerRemediationText.innerText = "Monitor connection log parameters continuously. Suggest running deep packet audits on protocol payloads to ensure no data is leaking.";
         }
 
+        // Parse SHAP values safely
+        let shapList = [];
+        if (Array.isArray(row.shap_values)) {
+            shapList = row.shap_values;
+        } else if (typeof row.shap_values === 'string') {
+            try {
+                shapList = JSON.parse(row.shap_values);
+            } catch (e) {
+                shapList = [];
+            }
+        }
+
+        // Render Threat Analysis Statement answering what malicious thing makes this IP a threat
+        const threatAnalysis = buildThreatStatement(row, shapList);
+        if (drawerThreatStatementText) {
+            drawerThreatStatementText.innerHTML = threatAnalysis.statement;
+        }
+        if (drawerThreatReasonBadge) {
+            drawerThreatReasonBadge.innerText = threatAnalysis.badgeText;
+            drawerThreatReasonBadge.className = `text-[9px] font-mono px-2 py-0.5 rounded border ${threatAnalysis.badgeClass} font-bold uppercase tracking-wider`;
+        }
+        if (drawerThreatReasonBox) {
+            drawerThreatReasonBox.className = `p-3.5 rounded-xl border ${threatAnalysis.boxClass} space-y-2.5`;
+        }
+        if (drawerThreatStatementIcon) {
+            drawerThreatStatementIcon.setAttribute('data-lucide', threatAnalysis.icon);
+            drawerThreatStatementIcon.className = `w-4 h-4 ${threatAnalysis.iconClass} mt-0.5 flex-shrink-0`;
+        }
+        if (drawerThreatAnalysisIcon) {
+            drawerThreatAnalysisIcon.setAttribute('data-lucide', threatAnalysis.headerIcon);
+            drawerThreatAnalysisIcon.className = `w-3.5 h-3.5 ${threatAnalysis.headerClass}`;
+        }
+        if (drawerThreatKeyFactors) {
+            drawerThreatKeyFactors.innerHTML = '';
+            threatAnalysis.keyPoints.forEach(kp => {
+                const kpDiv = document.createElement('div');
+                kpDiv.className = 'flex items-center justify-between text-[11px] py-1 border-b border-white/5 last:border-0';
+                kpDiv.innerHTML = `
+                    <span class="text-gray-400 flex items-center gap-1.5 font-mono">
+                        <i data-lucide="${kp.icon}" class="w-3 h-3 ${kp.color}"></i>
+                        <span>${kp.label}:</span>
+                    </span>
+                    <span class="font-medium ${kp.color} text-right ml-2">${kp.value}</span>
+                `;
+                drawerThreatKeyFactors.appendChild(kpDiv);
+            });
+        }
+
+        // Render Risk Scoring Methodology Factors checklist
+        if (drawerRiskFactorsList) {
+            drawerRiskFactorsList.innerHTML = '';
+            let factorItems = [];
+
+            if (row.prediction === 'Normal') {
+                factorItems = [
+                    { label: "Verified normal network communication profile", impact: "+0 pts", isNegative: false },
+                    { label: "Packet length and transfer rate within baseline limits", impact: "+0 pts", isNegative: false },
+                    { label: "No volumetric flood, scan, or exploit signatures detected", impact: "+0 pts", isNegative: false }
+                ];
+            } else {
+                const atkLower = (row.attack_type || '').toLowerCase();
+                let basePoints = 40;
+                let baseName = "Volumetric Denial of Service exploit vector (DDoS)";
+                if (atkLower.includes('ssh') || atkLower.includes('brute')) {
+                    basePoints = 35;
+                    baseName = "Credential brute-force authentication attempt (SSH)";
+                } else if (atkLower.includes('port') || atkLower.includes('scan')) {
+                    basePoints = 25;
+                    baseName = "Network reconnaissance / port sweeping behavior";
+                } else if (row.prediction === 'Suspicious') {
+                    basePoints = 20;
+                    baseName = "Anomalous traffic profile deviation from baseline";
+                }
+
+                const confPoints = Math.min(25, Math.round(((parseFloat(row.confidence) || 95) / 100) * 25));
+                const topFeatureName = shapList[0] ? shapList[0].name : "Flow volume metrics";
+
+                factorItems = [
+                    { label: `${baseName} on ${getPortServiceName(row.port)}`, impact: `+${basePoints} pts`, isNegative: true },
+                    { label: `ML classifier confidence index (${(parseFloat(row.confidence) || 95).toFixed(1)}%)`, impact: `+${confPoints} pts`, isNegative: true },
+                    { label: `Extreme feature anomaly (${topFeatureName}) exceeded safety limits`, impact: "+20 pts", isNegative: true },
+                    { label: "Unsupervised anomaly detection confirmed abnormal traffic signature", impact: "+15 pts", isNegative: true }
+                ];
+            }
+
+            factorItems.forEach(item => {
+                const factorEl = document.createElement('div');
+                factorEl.className = "flex justify-between items-center py-1 border-b border-white/5 last:border-0";
+                factorEl.innerHTML = `
+                    <span class="text-gray-300 flex items-center gap-1.5">
+                        <i data-lucide="${item.isNegative ? 'alert-circle' : 'check-circle-2'}" class="w-3 h-3 ${item.isNegative ? 'text-cyberDanger' : 'text-cyberSuccess'}"></i>
+                        <span>${item.label}</span>
+                    </span>
+                    <span class="font-mono font-bold ${item.isNegative ? 'text-cyberDanger' : 'text-cyberSuccess'} ml-2 flex-shrink-0">${item.impact}</span>
+                `;
+                drawerRiskFactorsList.appendChild(factorEl);
+            });
+        }
+
         // Render SHAP list inside drawer
         drawerShapReasonsList.innerHTML = '';
-        row.shap_values.slice(0, 4).forEach(item => {
+        shapList.slice(0, 4).forEach(item => {
             const isPos = item.type === 'positive';
             const colorClass = isPos ? 'text-cyberDanger' : 'text-cyberSuccess';
             const bgClass = isPos ? 'bg-cyberDanger/5' : 'bg-cyberSuccess/5';

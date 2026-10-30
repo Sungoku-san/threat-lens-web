@@ -1517,6 +1517,29 @@
                 </div>
             </div>
 
+            <!-- Malicious Threat Statement / Root Cause Analysis -->
+            <div class="space-y-2.5" id="drawerThreatAnalysisSection">
+                <div class="flex items-center justify-between">
+                    <h4 class="font-space font-bold text-xs text-white uppercase tracking-wider flex items-center space-x-1.5">
+                        <i data-lucide="alert-octagon" class="w-3.5 h-3.5 text-cyberDanger" id="drawerThreatAnalysisIcon"></i>
+                        <span id="drawerThreatAnalysisTitle">Malicious Threat Analysis &amp; Reason</span>
+                    </h4>
+                    <span id="drawerThreatReasonBadge" class="text-[9px] font-mono px-2 py-0.5 rounded border border-cyberDanger/30 bg-cyberDanger/10 text-cyberDanger font-bold uppercase tracking-wider">MALICIOUS ACTIVITY</span>
+                </div>
+                <div id="drawerThreatReasonBox" class="p-3.5 rounded-xl bg-cyberDanger/10 border border-cyberDanger/25 space-y-2.5">
+                    <div class="flex items-start space-x-2.5">
+                        <i data-lucide="flame" class="w-4 h-4 text-cyberDanger mt-0.5 flex-shrink-0" id="drawerThreatStatementIcon"></i>
+                        <p class="text-xs text-gray-200 leading-relaxed font-light" id="drawerThreatStatementText">
+                            <!-- Populated dynamically: exact reason what malicious thing makes this IP a threat -->
+                        </p>
+                    </div>
+                    <!-- Key Malicious Factors Badges -->
+                    <div id="drawerThreatKeyFactors" class="pt-2 border-t border-white/5 space-y-1.5">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+            </div>
+
             <!-- Risk Score Factors Checklist (Transparent Explanation) -->
             <div class="space-y-2">
                 <h4 class="font-space font-bold text-xs text-white uppercase tracking-wider flex items-center space-x-1.5">
